@@ -1,18 +1,35 @@
 'use client';
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-import type { CustomerSegmentMetrics } from '@/lib/types/sales';
+import type { CustomerSegmentMetrics, SalesRecord } from '@/lib/types/sales';
 import { formatCurrency } from '@/lib/utils/formatters';
 import { ChartCard } from './chart-card';
+import { useDrillDown } from '@/lib/context/drill-down-context';
+import { filterSalesData } from '@/lib/utils/drill-down-filters';
 
 interface CustomerSegmentationChartProps {
   data: CustomerSegmentMetrics[];
+  allRecords: SalesRecord[];
 }
 
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))'];
 
-export function CustomerSegmentationChart({ data }: CustomerSegmentationChartProps) {
+export function CustomerSegmentationChart({ data, allRecords }: CustomerSegmentationChartProps) {
+  const { setFilter, setFilteredData, setIsOpen } = useDrillDown();
   const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
+
+  const handleClick = (segmentData: CustomerSegmentMetrics & { percentage: string }) => {
+    const filter = {
+      type: 'customerType' as const,
+      value: segmentData.segment,
+      label: `${segmentData.segment} Customers`,
+    };
+
+    const filtered = filterSalesData(allRecords, filter);
+    setFilter(filter);
+    setFilteredData(filtered);
+    setIsOpen(true);
+  };
 
   const chartData = data.map((item) => ({
     ...item,
@@ -32,6 +49,7 @@ export function CustomerSegmentationChart({ data }: CustomerSegmentationChartPro
             outerRadius={80}
             fill="#8884d8"
             dataKey="revenue"
+            onClick={(data) => handleClick(data)}
           >
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

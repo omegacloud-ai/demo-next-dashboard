@@ -1,10 +1,7 @@
 import { loadSalesData } from '@/lib/data/load-sales-data';
 import { calculateDashboardData } from '@/lib/data/sales-analytics';
 import { SummaryCards } from '@/components/dashboard/summary-cards';
-import { SalesOverTimeChart } from '@/components/charts/sales-over-time-chart';
-import { RegionalPerformanceChart } from '@/components/charts/regional-performance-chart';
-import { ProductAnalysisChart } from '@/components/charts/product-analysis-chart';
-import { CustomerSegmentationChart } from '@/components/charts/customer-segmentation-chart';
+import { DashboardClient } from '@/components/dashboard/dashboard-client';
 
 export default async function Home() {
   // Server-side data loading
@@ -23,15 +20,7 @@ export default async function Home() {
 
         <SummaryCards summary={data.summary} />
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <SalesOverTimeChart data={data.timeSeries} />
-          <RegionalPerformanceChart data={data.regional} />
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <ProductAnalysisChart data={data.products} />
-          <CustomerSegmentationChart data={data.customerSegments} />
-        </div>
+        <DashboardClient data={data} records={records} />
       </div>
     </div>
   );

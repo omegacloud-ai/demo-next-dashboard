@@ -1,12 +1,15 @@
 'use client';
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { RegionalMetrics } from '@/lib/types/sales';
+import type { RegionalMetrics, SalesRecord } from '@/lib/types/sales';
 import { formatCurrency, formatPercent } from '@/lib/utils/formatters';
 import { ChartCard } from './chart-card';
+import { useDrillDown } from '@/lib/context/drill-down-context';
+import { filterSalesData } from '@/lib/utils/drill-down-filters';
 
 interface RegionalPerformanceChartProps {
   data: RegionalMetrics[];
+  allRecords: SalesRecord[];
 }
 
 const COLORS = [
@@ -17,7 +20,22 @@ const COLORS = [
   'hsl(var(--chart-5))',
 ];
 
-export function RegionalPerformanceChart({ data }: RegionalPerformanceChartProps) {
+export function RegionalPerformanceChart({ data, allRecords }: RegionalPerformanceChartProps) {
+  const { setFilter, setFilteredData, setIsOpen } = useDrillDown();
+
+  const handleClick = (regionData: RegionalMetrics) => {
+    const filter = {
+      type: 'region' as const,
+      value: regionData.region,
+      label: `${regionData.region} Region`,
+    };
+
+    const filtered = filterSalesData(allRecords, filter);
+    setFilter(filter);
+    setFilteredData(filtered);
+    setIsOpen(true);
+  };
+
   const dataWithColors = data.map((item, index) => ({
     ...item,
     fill: COLORS[index % COLORS.length],
@@ -26,7 +44,7 @@ export function RegionalPerformanceChart({ data }: RegionalPerformanceChartProps
   return (
     <ChartCard title="Regional Performance">
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={dataWithColors}>
+        <BarChart data={dataWithColors} onClick={(e) => e?.activePayload && handleClick(e.activePayload[0].payload)}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
           <XAxis dataKey="region" className="text-xs" />
           <YAxis tickFormatter={(value) => formatCurrency(value)} className="text-xs" />
@@ -63,7 +81,12 @@ export function RegionalPerformanceChart({ data }: RegionalPerformanceChartProps
               return null;
             }}
           />
-          <Bar dataKey="revenue" radius={[8, 8, 0, 0]} />
+          <Bar
+            dataKey="revenue"
+            radius={[8, 8, 0, 0]}
+            onClick={(data) => handleClick(data)}
+            style={{ cursor: 'pointer' }}
+          />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>

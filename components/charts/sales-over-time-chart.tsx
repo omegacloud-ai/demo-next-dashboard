@@ -5,16 +5,51 @@ import { format, parseISO } from 'date-fns';
 import type { TimeSeriesDataPoint } from '@/lib/types/sales';
 import { formatCurrency } from '@/lib/utils/formatters';
 import { ChartCard } from './chart-card';
+import { useDrillDown } from '@/lib/context/drill-down-context';
+import type { SalesRecord } from '@/lib/types/sales';
+import { filterSalesData } from '@/lib/utils/drill-down-filters';
 
 interface SalesOverTimeChartProps {
   data: TimeSeriesDataPoint[];
+  allRecords: SalesRecord[];
 }
 
-export function SalesOverTimeChart({ data }: SalesOverTimeChartProps) {
+export function SalesOverTimeChart({ data, allRecords }: SalesOverTimeChartProps) {
+  const { setFilter, setFilteredData, setIsOpen } = useDrillDown();
+
+  const handleClick = (data: TimeSeriesDataPoint) => {
+    const monthKey = format(parseISO(data.date), 'yyyy-MM');
+    const monthLabel = format(parseISO(data.date), 'MMM yyyy');
+
+    const filter = {
+      type: 'month' as const,
+      value: monthKey,
+      label: monthLabel,
+    };
+
+    const filtered = filterSalesData(allRecords, filter);
+    setFilter(filter);
+    setFilteredData(filtered);
+    setIsOpen(true);
+  };
+
   return (
     <ChartCard title="Sales Over Time">
       <ResponsiveContainer width="100%" height={300}>
-        <AreaChart data={data}>
+        <AreaChart
+          data={data}
+          onClick={(e: any) => {
+            // AreaChart onClick provides activeLabel and activeIndex
+            if (e?.activeLabel !== undefined) {
+              // activeLabel is the date value
+              const clickedDate = e.activeLabel;
+              const dataPoint = data.find((d) => d.date === clickedDate);
+              if (dataPoint) {
+                handleClick(dataPoint);
+              }
+            }
+          }}
+        >
           <defs>
             <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
@@ -66,6 +101,7 @@ export function SalesOverTimeChart({ data }: SalesOverTimeChartProps) {
             stroke="hsl(var(--primary))"
             fillOpacity={1}
             fill="url(#colorRevenue)"
+            style={{ cursor: 'pointer' }}
           />
         </AreaChart>
       </ResponsiveContainer>

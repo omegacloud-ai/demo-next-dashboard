@@ -1,19 +1,37 @@
 'use client';
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { ProductMetrics } from '@/lib/types/sales';
+import type { ProductMetrics, SalesRecord } from '@/lib/types/sales';
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters';
 import { ChartCard } from './chart-card';
+import { useDrillDown } from '@/lib/context/drill-down-context';
+import { filterSalesData } from '@/lib/utils/drill-down-filters';
 
 interface ProductAnalysisChartProps {
   data: ProductMetrics[];
+  allRecords: SalesRecord[];
 }
 
-export function ProductAnalysisChart({ data }: ProductAnalysisChartProps) {
+export function ProductAnalysisChart({ data, allRecords }: ProductAnalysisChartProps) {
+  const { setFilter, setFilteredData, setIsOpen } = useDrillDown();
+
+  const handleClick = (productData: ProductMetrics) => {
+    const filter = {
+      type: 'product' as const,
+      value: productData.product,
+      label: productData.product,
+    };
+
+    const filtered = filterSalesData(allRecords, filter);
+    setFilter(filter);
+    setFilteredData(filtered);
+    setIsOpen(true);
+  };
+
   return (
     <ChartCard title="Product Analysis">
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} layout="vertical">
+        <BarChart data={data} layout="vertical" onClick={(e) => e?.activePayload && handleClick(e.activePayload[0].payload)}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
           <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} className="text-xs" />
           <YAxis dataKey="product" type="category" className="text-xs" width={80} />
@@ -46,7 +64,13 @@ export function ProductAnalysisChart({ data }: ProductAnalysisChartProps) {
               return null;
             }}
           />
-          <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[0, 8, 8, 0]} />
+          <Bar
+            dataKey="revenue"
+            fill="hsl(var(--primary))"
+            radius={[0, 8, 8, 0]}
+            onClick={(data) => handleClick(data)}
+            style={{ cursor: 'pointer' }}
+          />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>
